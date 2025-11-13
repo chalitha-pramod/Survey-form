@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer Feedback Survey | Genex Talent</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+body {
+  background: linear-gradient(135deg, #6f42c1, #6610f2);
+  font-family: 'Poppins', sans-serif;
+  color: #fff;
+  min-height: 100vh;
+}
+.container {
+  max-width: 900px;
+  background: #fff;
+  color: #000;
+  border-radius: 20px;
+  padding: 40px;
+  margin-top: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+.rating-scale {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.rating-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.rating-box:hover {
+  transform: scale(1.2);
+}
+.rating-box.selected {
+  box-shadow: 0 0 10px #000;
+  transform: scale(1.2);
+}
+.emoji {
+  font-size: 1.5rem;
+}
+.progress {
+  height: 8px;
+  margin-bottom: 20px;
+}
+.voice-btn {
+  border: none;
+  background: transparent;
+  color: #6f42c1;
+  font-size: 1.2rem;
+  margin-left: 8px;
+  cursor: pointer;
+}
+.checkmark {
+  color: green;
+  display: none;
+  margin-left: 8px;
+  font-size: 1.2rem;
+}
+.language-switch {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="language-switch">
+  <select id="language" class="form-select form-select-sm">
+    <option value="en">English</option>
+    <option value="si">සිංහල</option>
+    <option value="ta">தமிழ்</option>
+  </select>
+</div>
+
+<div class="container">
+  <h2 class="text-center mb-4">📝 Customer Experience Survey</h2>
+
+  <div class="progress">
+    <div id="progressBar" class="progress-bar bg-success" style="width:0%"></div>
+  </div>
+
+  <form id="surveyForm"></form>
+
+  <button class="btn btn-success w-100 mt-4">Submit Feedback</button>
+</div>
+
+<script>
+// 🎯 Gradient color scale (red → yellow → green)
+const colors = [
+  '#ff3b30','#ff5e3a','#ff9500','#ffcc00','#ffe400',
+  '#cddc39','#8bc34a','#4caf50','#2e7d32','#1b5e20'
+];
+
+// 30 rating + 5 text questions
+const ratingQuestions = [
+  "How satisfied are you with our service?",
+  "How friendly was our staff?",
+  "How fast was the response time?",
+  "How clean was our environment?",
+  "How easy was it to find what you needed?",
+  "How likely are you to recommend us?",
+  "How well did we meet your expectations?",
+  "How satisfied are you with our pricing?",
+  "How likely are you to return?",
+  "How informative was our website?",
+  "How helpful was our support team?",
+  "How was your overall experience?",
+  "How efficient was our process?",
+  "How reliable are our products?",
+  "How innovative do you find us?",
+  "How accessible was our location?",
+  "How visually appealing are our materials?",
+  "How professional was our team?",
+  "How flexible were our options?",
+  "How transparent was our communication?",
+  "How confident are you in our brand?",
+  "How comfortable was your visit?",
+  "How respectful was our staff?",
+  "How safe did you feel during your visit?",
+  "How effective were our solutions?",
+  "How organized were our operations?",
+  "How easy was it to complete your transaction?",
+  "How would you rate our after-sales support?",
+  "How well did we handle your feedback?",
+  "Overall, how satisfied are you?"
+];
+
+const textQuestions = [
+  "What did you like most about our service?",
+  "What can we improve next time?",
+  "Any suggestions or new features you’d like to see?",
+  "How did you hear about us?",
+  "Any final comments or feedback?"
+];
+
+// 🌐 Language placeholders (example)
+const translations = {
+  si: ratingQuestions.map(q => "සිංහල: " + q),
+  ta: ratingQuestions.map(q => "தமிழ்: " + q),
+};
+
+// 🧱 Build form
+const form = document.getElementById('surveyForm');
+
+// Add rating questions
+ratingQuestions.forEach((q, i) => {
+  const div = document.createElement('div');
+  div.className = 'mb-4 question';
+  div.setAttribute('data-index', i);
+  div.innerHTML = `
+    <label class="form-label fw-semibold d-flex align-items-center">
+      <span class="question-text flex-grow-1">${q}</span>
+      <button type="button" class="voice-btn" onclick="speakQuestion(this)">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+      <i class="fa-solid fa-check checkmark"></i>
+    </label>
+    <div class="rating-scale">
+      <span class="emoji">😢</span>
+      ${colors.map((c, idx) => `<div class="rating-box" style="background-color:${c}" data-value="${idx+1}" onclick="selectRating(this)"></div>`).join('')}
+      <span class="emoji">😄</span>
+    </div>
+  `;
+  form.appendChild(div);
+});
+
+// Add text questions
+textQuestions.forEach((q, i) => {
+  const div = document.createElement('div');
+  div.className = 'mb-4 question';
+  div.setAttribute('data-type', 'text');
+  div.innerHTML = `
+    <label class="form-label fw-semibold d-flex align-items-center">
+      <span class="question-text flex-grow-1">${q}</span>
+      <button type="button" class="voice-btn" onclick="speakQuestion(this)">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+      <i class="fa-solid fa-check checkmark"></i>
+    </label>
+    <input type="text" class="form-control" oninput="markTextAnswered(this)">
+  `;
+  form.appendChild(div);
+});
+
+// 🌈 Handle rating selection
+function selectRating(el) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.rating-box').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  parent.closest('.question').querySelector('.checkmark').style.display = 'inline';
+  updateProgress();
+}
+
+// 🖊️ Handle text question completion
+function markTextAnswered(input) {
+  const check = input.closest('.question').querySelector('.checkmark');
+  check.style.display = input.value.trim() ? 'inline' : 'none';
+  updateProgress();
+}
+
+// 🔊 Multilingual voice playback
+function speakQuestion(btn) {
+  const text = btn.closest('.question').querySelector('.question-text').textContent;
+  const lang = document.getElementById('language').value;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang === 'si' ? 'si-LK' : lang === 'ta' ? 'ta-IN' : 'en-US';
+  utter.rate = 1;
+  speechSynthesis.speak(utter);
+}
+
+// 🔄 Progress bar
+function updateProgress() {
+  const total = document.querySelectorAll('.question').length;
+  const completed = Array.from(document.querySelectorAll('.checkmark')).filter(c => c.style.display === 'inline').length;
+  const percent = Math.min((completed / total) * 100, 100);
+  document.getElementById('progressBar').style.width = percent + '%';
+}
+
+// 🌐 Language switch
+document.getElementById('language').addEventListener('change', function() {
+  const lang = this.value;
+  document.querySelectorAll('.question').forEach((q, i) => {
+    const textEl = q.querySelector('.question-text');
+    if (q.getAttribute('data-type') === 'text') {
+      // keep text questions same
+      return;
+    }
+    if (lang === 'en') textEl.textContent = ratingQuestions[i];
+    else textEl.textContent = translations[lang][i] || ratingQuestions[i];
+  });
+});
+</script>
+</body>
+</html>
